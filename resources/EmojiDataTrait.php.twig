@@ -1,0 +1,95 @@
+<?php
+declare(strict_types=1);
+
+/*
+ * This file is part of the Emoji package.
+ *
+ * (c) Jonas Stendahl <jonas@stendahl.me>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+namespace Boo\Emoji;
+
+/**
+ * EmojiDataTrait
+ *
+ * DO NOT EDIT. This file was auto-generated from the Unicode data files.
+ *
+ * @see {{ data_link }}
+ */
+trait EmojiDataTrait
+{
+    /**
+     * Patterns that match "Emoji_Modifier_Base" characters, which are those
+     * that can be modified by "Emoji_Modifier" (skintone) characters.
+     *
+     * @var string[]
+     */
+    private static $modifierBasePatterns = [
+    {% for emoji in modifierBasePatterns %}
+    '{{ emoji.pattern }}', // {{ emoji.comment }}
+    {% endfor %}
+];
+
+    /**
+     * Patterns that match "Emoji_Modifier" characters (Skin Tones, aka. Fitzpatrick Modifiers).
+     * These modifiers follow the characters in the "Emoji_Modifier_Base" group.
+     *
+     * @var string[]
+     */
+    private static $modifierPatterns = [
+    {% for emoji in modifierPatterns %}
+    '{{ emoji.pattern }}', // {{ emoji.comment }}
+    {% endfor %}
+];
+
+    /**
+     * Patterns that match characters in the "Emoji" group. Note that characters in this group are
+     * (confusingly) not rendered as Emoji by default. They must be followed by the U+FE0F (variant
+     * selector) character to be rendered as Emoji.
+     *
+     * @var string[]
+     */
+    private static $patterns = [
+    {% for emoji in patterns %}
+    '{{ emoji.pattern }}', // {{ emoji.comment }}
+    {% endfor %}
+];
+
+    /**
+     * Patterns that match characters in the "Emoji Presentation" group. These characters are
+     * rendered as Emoji by default, and do not need a variant selector, unlike `EmojiPatterns`.
+     *
+     * @var string[]
+     */
+    private static $presentationPatterns = [
+    {% for emoji in presentationPatterns %}
+    '{{ emoji.pattern }}', // {{ emoji.comment }}
+    {% endfor %}
+];
+
+    /**
+     * Patterns that match emoji sequences. This includes keycap characters, flags, and skintone
+     * variants, but not Zero-Width-Joiner (ZWJ) sequences used for "family" characters like "👨‍👩‍👧‍👧".
+     *
+     * @var string[]
+     */
+    private static $sequencePatterns = [
+    {% for emoji in sequencePatterns %}
+    '{{ emoji.pattern }}', // {{ emoji.comment }}
+    {% endfor %}
+];
+
+    /**
+     * Patterns that match Zero-Width-Joiner (ZWJ) sequences used for "family" characters like "👨‍👩‍👧‍👧".
+     *
+     * @var string[]
+     */
+    private static $zeroWidthJoinerSequencePatterns = [
+    {% for emoji in zeroWidthJoinerSequencePatterns %}
+    '{{ emoji.pattern }}', // {{ emoji.comment }}
+    {% endfor %}
+];
+}

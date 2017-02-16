@@ -1,0 +1,119 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+/*
+ * This file is part of the Emoji package.
+ *
+ * (c) Jonas Stendahl <jonas@stendahl.me>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+namespace Boo\Emoji;
+
+use GuzzleHttp\Client;
+use GuzzleHttp\TransferStats;
+use RuntimeException;
+use Twig_Environment;
+use Twig_Loader_Filesystem;
+
+chdir(dirname(__DIR__));
+
+require_once 'vendor/autoload.php';
+
+function get_base_url(): string
+{
+    static $baseUrl;
+
+    if ($baseUrl !== null) {
+        return $baseUrl;
+    }
+
+    (new Client())->head('http://www.unicode.org/Public/emoji/latest/', [
+        'on_stats' => function (TransferStats $stats) use (&$baseUrl) {
+            $baseUrl = (string) $stats->getEffectiveUri();
+        },
+    ]);
+
+    return $baseUrl;
+}
+
+function get_file(string $file): string
+{
+    return (string) (new Client())->get(get_base_url().$file)->getBody();
+}
+
+function hex_code_to_escape(string $hex): string
+{
+    $length = mb_strlen($hex);
+
+    if ($length !== 4 && $length !== 5) {
+        throw new RuntimeException('Unknown hex code: '.$hex);
+    }
+
+    return '\x{'.$hex.'}';
+}
+
+function parse_file(string $file): array
+{
+    $emojis = array_reduce(explode("\n", $file), function (array $carry, string $line): array {
+        if (preg_match('/^\s*([^#]+?)\s*(;\s*([^#]+)\s*)?\#(.*)$/', $line, $match) !== 1) {
+            return $carry;
+        }
+
+        $carry[] = [
+            'comment' => trim($match[4]),
+            'pattern' => trim($match[1]),
+            'property' => trim($match[3]),
+        ];
+
+        return $carry;
+    }, []);
+
+    usort($emojis, function (array $one, array $two): int {
+        return $one['pattern'] <=> $two['pattern'];
+    });
+
+    return array_map(function (array $emoji): array {
+        $parts = preg_split('/\s+/', $emoji['pattern']);
+        $emoji['pattern'] = implode('', array_map(function (string $part) use ($emoji): string {
+            if (preg_match('/^([a-f0-9]+)$/i', $part, $match) === 1) {
+                return hex_code_to_escape($match[1]);
+            }
+
+            if (preg_match('/^([a-f0-9]+)\.\.([a-f0-9]+)$/i', $part, $match) === 1) {
+                return '['.hex_code_to_escape($match[1]).'-'.hex_code_to_escape($match[2]).']';
+            }
+
+            throw new RuntimeException('Unknown line: '.$emoji['pattern']);
+        }, $parts));
+
+        return $emoji;
+    }, $emojis);
+}
+
+$emojis = parse_file(get_file('emoji-data.txt'));
+$modifierBasePatterns = array_filter($emojis, function (array $emoji): bool { return $emoji['property'] === 'Emoji_Modifier_Base'; });
+$modifierPatterns = array_filter($emojis, function (array $emoji): bool  { return $emoji['property'] === 'Emoji_Modifier'; });
+$patterns = array_filter($emojis, function (array $emoji): bool  { return $emoji['property'] === 'Emoji'; });
+$presentationPatterns = array_filter($emojis, function (array $emoji): bool  { return $emoji['property'] === 'Emoji_Presentation'; });
+
+unset($emojis);
+
+$sequencePatterns = parse_file(get_file('emoji-sequences.txt'));
+$zeroWidthJoinerSequencePatterns = parse_file(get_file('emoji-zwj-sequences.txt'));
+
+$loader = new Twig_Loader_Filesystem('resources');
+$twig = new Twig_Environment($loader);
+
+file_put_contents('src/EmojiDataTrait.php', $twig->render('EmojiDataTrait.php.twig', [
+    'data_link' => get_base_url(),
+    'modifierBasePatterns' => $modifierBasePatterns,
+    'modifierPatterns' => $modifierPatterns,
+    'patterns' => $patterns,
+    'presentationPatterns' => $presentationPatterns,
+    'sequencePatterns' => $sequencePatterns,
+    'zeroWidthJoinerSequencePatterns' => $zeroWidthJoinerSequencePatterns,
+]));
