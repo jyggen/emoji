@@ -1,7 +1,10 @@
 ---
+after_install:
+  - cp $HOME/xdebug.ini $HOME/.phpenv/versions/$(phpenv version-name)/etc/conf.d/xdebug.ini || return 0
 after_script:
   - "php vendor/bin/coveralls"
 before_install:
+  - mv $HOME/.phpenv/versions/$(phpenv version-name)/etc/conf.d/xdebug.ini $HOME/xdebug.ini || return 0
   - "travis_retry composer self-update"
   - "travis_retry composer global require hirak/prestissimo"
 before_script:
