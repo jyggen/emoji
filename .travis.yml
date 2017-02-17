@@ -5,7 +5,6 @@ after_script:
   - "php vendor/bin/coveralls"
 before_install:
   - mv $HOME/.phpenv/versions/$(phpenv version-name)/etc/conf.d/xdebug.ini $HOME/xdebug.ini || return 0
-  - "travis_retry composer self-update"
   - "travis_retry composer global require hirak/prestissimo"
 before_script:
   - "mkdir -p build/logs"
@@ -25,7 +24,6 @@ php:
   - 7.0snapshot
   - 7.1
   - 7.1snapshot
-  - master
 script:
   - "./vendor/bin/grumphp run"
 sudo: false
